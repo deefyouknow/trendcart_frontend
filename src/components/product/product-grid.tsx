@@ -1,3 +1,6 @@
+"use client";
+
+import { SearchX } from "lucide-react";
 import { ProductCard } from "./product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StoreProductListItem } from "@/lib/types";
@@ -10,24 +13,10 @@ export function ProductGrid({ products }: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mb-4 text-muted-foreground"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-        <h3 className="text-lg font-semibold">No products found</h3>
+        <SearchX className="mb-4 h-12 w-12 text-muted-foreground" />
+        <h3 className="text-lg font-semibold">ไม่พบสินค้า</h3>
         <p className="text-sm text-muted-foreground">
-          Try adjusting your search or filter criteria.
+          ลองเปลี่ยนคำค้นหาหรือตัวกรองดูนะครับ
         </p>
       </div>
     );

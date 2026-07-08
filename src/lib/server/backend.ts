@@ -48,6 +48,7 @@ export async function buildBackendInit(
   const init: RequestInit = {
     method: request.method,
     headers,
+    redirect: "manual",
   };
 
   if (passthroughBody && request.method !== "GET" && request.method !== "HEAD") {
@@ -74,6 +75,9 @@ export async function proxyToBackend(
   const responseHeaders = new Headers();
   const contentType = res.headers.get("content-type");
   if (contentType) responseHeaders.set("content-type", contentType);
+  
+  const location = res.headers.get("location");
+  if (location) responseHeaders.set("location", location);
 
   return new Response(res.body, {
     status: res.status,

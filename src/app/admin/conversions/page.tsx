@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiRequestError } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import type { Conversion, ConversionStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { ErrorBanner } from "@/components/ui/error-banner";
+import { ITEMS_PER_PAGE } from "@/lib/constants";
 
 const STATUS_OPTIONS: ConversionStatus[] = ["pending", "approved", "rejected", "cancelled"];
-
-const STATUS_COLORS: Record<ConversionStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  cancelled: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
-};
 
 export default function ConversionsPage() {
   const [conversions, setConversions] = useState<Conversion[]>([]);
@@ -22,20 +21,16 @@ export default function ConversionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [platformFilter, setPlatformFilter] = useState<string>("");
-
-  // Action states
   const [acting, setActing] = useState<string | null>(null);
 
   const fetchConversions = async () => {
     try {
       setLoading(true);
-      const params: Record<string, string | number> = { page, limit: 20 };
+      const params: Record<string, string | number> = { page, limit: ITEMS_PER_PAGE };
       if (statusFilter) params.status = statusFilter;
       if (platformFilter) params.platform = platformFilter;
-
       const res = await api.getConversions(params);
       setConversions(res.items);
       setTotal(res.total);
@@ -76,47 +71,26 @@ export default function ConversionsPage() {
 
   const formatCurrency = (amount: number | null, currency: string) => {
     if (amount === null) return "—";
-    return new Intl.NumberFormat("th-TH", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("th-TH", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return new Intl.NumberFormat("th-TH", { style: "currency", currency }).format(amount);
   };
 
   if (error) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <div className="text-destructive">{error}</div>
+        <ErrorBanner message={error} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Conversions</h1>
-        <div className="text-sm text-muted-foreground">
-          {total} total conversions
-        </div>
-      </div>
+      <PageHeader title="Conversions" description={`${total} total conversions`} />
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <select
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="rounded-md border bg-background px-3 py-2 text-sm"
         >
           <option value="">All Status</option>
@@ -129,10 +103,7 @@ export default function ConversionsPage() {
 
         <select
           value={platformFilter}
-          onChange={(e) => {
-            setPlatformFilter(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => { setPlatformFilter(e.target.value); setPage(1); }}
           className="rounded-md border bg-background px-3 py-2 text-sm"
         >
           <option value="">All Platforms</option>
@@ -177,28 +148,16 @@ export default function ConversionsPage() {
                         <span className="capitalize">{conv.platform}</span>
                       </td>
                       <td className="py-3">
-                        <span className="font-mono text-xs">
-                          {conv.order_id || "—"}
-                        </span>
+                        <span className="font-mono text-xs">{conv.order_id || "—"}</span>
                       </td>
-                      <td className="py-3">
-                        {formatCurrency(conv.order_amount, conv.currency)}
-                      </td>
-                      <td className="py-3">
-                        {formatCurrency(conv.commission, conv.currency)}
-                      </td>
-                      <td className="py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${STATUS_COLORS[conv.status]}`}
-                        >
-                          {conv.status}
-                        </span>
-                      </td>
+                      <td className="py-3">{formatCurrency(conv.order_amount, conv.currency)}</td>
+                      <td className="py-3">{formatCurrency(conv.commission, conv.currency)}</td>
+                      <td className="py-3"><StatusBadge status={conv.status} /></td>
                       <td className="py-3">
                         <span className="capitalize">{conv.conversion_type}</span>
                       </td>
                       <td className="py-3 text-muted-foreground">
-                        {formatDate(conv.created_at)}
+                        {formatDateTime(conv.created_at)}
                       </td>
                       <td className="py-3">
                         {conv.status === "pending" && (
@@ -233,28 +192,7 @@ export default function ConversionsPage() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {total > 20 && (
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {Math.ceil(total / 20)}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page * 20 >= total}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      <Pagination page={page} total={total} limit={ITEMS_PER_PAGE} onPageChange={setPage} />
     </div>
   );
 }

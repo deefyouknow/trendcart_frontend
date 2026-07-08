@@ -5,6 +5,11 @@ import { api, ApiRequestError } from "@/lib/api";
 import type { ScrapeSource } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBanner } from "@/components/ui/error-banner";
+import { ITEMS_PER_PAGE } from "@/lib/constants";
 
 export default function ScrapeSourcesPage() {
   const [sources, setSources] = useState<ScrapeSource[]>([]);
@@ -13,7 +18,6 @@ export default function ScrapeSourcesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingSource, setEditingSource] = useState<ScrapeSource | null>(null);
   const [formData, setFormData] = useState({
@@ -23,14 +27,12 @@ export default function ScrapeSourcesPage() {
     scrape_interval_hours: 24,
   });
   const [saving, setSaving] = useState(false);
-
-  // Trigger state
   const [triggering, setTriggering] = useState<string | null>(null);
 
   const fetchSources = async () => {
     try {
       setLoading(true);
-      const res = await api.getScrapeSources({ page, limit: 20 });
+      const res = await api.getScrapeSources({ page, limit: ITEMS_PER_PAGE });
       setSources(res.items);
       setTotal(res.total);
     } catch (err) {
@@ -111,30 +113,20 @@ export default function ScrapeSourcesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Scrape Sources</h1>
-          <p className="text-muted-foreground">
-            Manage data sources for automated scraping
-          </p>
-        </div>
-        <Button onClick={handleCreate}>Add Source</Button>
-      </div>
+      <PageHeader
+        title="Scrape Sources"
+        description="Manage data sources for automated scraping"
+        action={<Button onClick={handleCreate}>Add Source</Button>}
+      />
 
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="p-4 text-destructive">{error}</CardContent>
-        </Card>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : sources.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            No scrape sources configured yet. Click &quot;Add Source&quot; to get started.
-          </CardContent>
-        </Card>
+        <EmptyState
+          message="No scrape sources configured yet. Click &quot;Add Source&quot; to get started."
+        />
       ) : (
         <div className="space-y-4">
           {sources.map((source) => (
@@ -200,30 +192,7 @@ export default function ScrapeSourcesPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {total > 20 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {Math.ceil(total / 20)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page * 20 >= total}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      <Pagination page={page} total={total} limit={ITEMS_PER_PAGE} onPageChange={setPage} />
 
       {/* Modal */}
       {showModal && (

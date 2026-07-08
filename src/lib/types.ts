@@ -46,7 +46,7 @@ export interface StoreProductListItem {
   category: string;
   images: string[];
   min_price: number;
-  min_currency: string;
+  min_currency: string | null;
   platforms: string[];
   created_at: string;
 }
@@ -114,9 +114,9 @@ export interface Category {
   product_count: number;
 }
 
-export interface CategoriesResponse {
-  categories: Category[];
-}
+// Backend returns raw array: Category[]
+// Frontend wrapper for server-side fetching:
+export type CategoriesResponse = Category[];
 
 // --- Pagination ---
 export interface PaginationParams {

@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -44,6 +45,5 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 .claude/
+.agents/
 uploads/
-node_modules
-/src/__tests__

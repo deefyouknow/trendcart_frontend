@@ -112,11 +112,11 @@ export function ProductForm({ initialData, onSubmit, submitLabel }: ProductFormP
         <ImageUpload images={images} onImagesChange={setImages} />
       </div>
 
-      <div className="flex gap-3">
-        <Button type="submit" disabled={loading}>
+      <div className="flex flex-col sm:flex-row gap-3 mt-8">
+        <Button type="submit" disabled={loading} className="w-full sm:w-auto">
           {loading ? "Saving..." : submitLabel}
         </Button>
-        <Button type="button" variant="outline" onClick={() => window.history.back()}>
+        <Button type="button" variant="outline" onClick={() => window.history.back()} className="w-full sm:w-auto">
           Cancel
         </Button>
       </div>

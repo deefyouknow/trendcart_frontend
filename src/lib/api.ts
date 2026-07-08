@@ -1,6 +1,6 @@
 import type {
   ApiError,
-  CategoriesResponse,
+  Category,
   LoginResponse,
   PaginationParams,
   ProductDetail,
@@ -16,14 +16,6 @@ import type {
    ============================================ */
 
 class ApiClient {
-  private token: string | null = null;
-
-  setToken(token: string | null) {
-    // No-op: JWT lives in httpOnly cookie managed by /api/auth/* proxy routes.
-    // Kept for backwards-compat with callers that still invoke it.
-    this.token = token;
-  }
-
   private async request<T>(
     path: string,
     options: RequestInit = {}
@@ -73,30 +65,24 @@ class ApiClient {
   }
 
   async login(data: { email: string; password: string }) {
-    const res = await this.request<LoginResponse>("/api/auth/login", {
+    return this.request<LoginResponse>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     });
-    this.setToken(res.token);
-    return res;
   }
 
   async loginWithGoogle(idToken: string) {
-    const res = await this.request<LoginResponse>("/api/auth/google", {
+    return this.request<LoginResponse>("/api/auth/google", {
       method: "POST",
       body: JSON.stringify({ id_token: idToken }),
     });
-    this.setToken(res.token);
-    return res;
   }
 
   async loginWithGitHub(code: string) {
-    const res = await this.request<LoginResponse>("/api/auth/github", {
+    return this.request<LoginResponse>("/api/auth/github", {
       method: "POST",
       body: JSON.stringify({ code }),
     });
-    this.setToken(res.token);
-    return res;
   }
 
   // --- Store (Public) ---
@@ -118,15 +104,16 @@ class ApiClient {
   }
 
   async getCategories() {
-    return this.request<CategoriesResponse>("/api/store/products/categories");
+    return this.request<Category[]>("/api/store/products/categories");
   }
 
   // --- Admin Products ---
-  async getAdminProducts(params: PaginationParams = {}) {
+  async getAdminProducts(params: PaginationParams & { search?: string } = {}) {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set("page", String(params.page));
     if (params.limit) searchParams.set("limit", String(params.limit));
     if (params.category) searchParams.set("category", params.category);
+    if (params.search) searchParams.set("search", params.search);
 
     const qs = searchParams.toString();
     return this.request<ProductListResponse>(

@@ -37,7 +37,7 @@ export function CategoryFilter({
         size="sm"
         onClick={() => handleSelect(null)}
       >
-        All
+        ทั้งหมด
       </Button>
       {categories?.map((cat) => (
         <Button

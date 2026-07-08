@@ -9,6 +9,7 @@ import { AffiliateDisclosure } from "@/components/disclosure/affiliate-disclosur
 import { PLATFORM_CONFIG, STOCK_STATUS_LABELS, STOCK_STATUS_COLORS } from "@/lib/constants";
 import { proxiedImageUrl } from "@/lib/image";
 import { formatPrice, cn } from "@/lib/utils";
+import { ImageIcon, X, ShoppingCart } from "lucide-react";
 
 function CartRow({ item }: { item: CartItemType }) {
   const { removeItem } = useCart();
@@ -29,19 +30,7 @@ function CartRow({ item }: { item: CartItemType }) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1"
-            >
-              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-            </svg>
+            <ImageIcon className="h-6 w-6" />
           </div>
         )}
       </div>
@@ -91,18 +80,7 @@ function CartRow({ item }: { item: CartItemType }) {
           onClick={() => removeItem(item.merchantLinkId, item.variant.id)}
           aria-label={`Remove ${item.productTitle}`}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
+          <X className="h-3.5 w-3.5" />
         </Button>
         <Button
           size="sm"
@@ -150,20 +128,7 @@ export default function CartPage() {
 
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="56"
-                height="56"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1"
-                className="mb-4 text-muted-foreground"
-              >
-                <circle cx="8" cy="21" r="1" />
-                <circle cx="19" cy="21" r="1" />
-                <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-              </svg>
+              <ShoppingCart className="mb-4 h-14 w-14 text-muted-foreground" />
               <h2 className="text-lg font-semibold">Your cart is empty</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Browse products and add items to get started.

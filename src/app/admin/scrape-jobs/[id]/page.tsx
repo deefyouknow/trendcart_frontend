@@ -7,6 +7,7 @@ import type { ScrapeJobDetail, ScrapeJobStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { formatDateTime } from "@/lib/utils";
 
 const STATUS_COLORS: Record<ScrapeJobStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
@@ -35,11 +36,6 @@ export default function ScrapeJobDetailPage() {
     };
     fetchJob();
   }, [params.id]);
-
-  const formatDate = (date: string | null) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleString();
-  };
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
@@ -99,15 +95,15 @@ export default function ScrapeJobDetailPage() {
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">Created</label>
-            <div className="mt-1">{formatDate(job.created_at)}</div>
+            <div className="mt-1">{formatDateTime(job.created_at)}</div>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">Started</label>
-            <div className="mt-1">{formatDate(job.started_at)}</div>
+            <div className="mt-1">{formatDateTime(job.started_at)}</div>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">Completed</label>
-            <div className="mt-1">{formatDate(job.completed_at)}</div>
+            <div className="mt-1">{formatDateTime(job.completed_at)}</div>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">Items Found</label>
@@ -162,7 +158,7 @@ export default function ScrapeJobDetailPage() {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatDate(result.created_at)}
+                      {formatDateTime(result.created_at)}
                     </div>
                   </div>
                   <details className="mt-2">

@@ -14,6 +14,17 @@ export function formatDate(dateString: string): string {
   });
 }
 
+export function formatDateTime(dateString: string | null): string {
+  if (!dateString) return "—";
+  return new Date(dateString).toLocaleString("th-TH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function timeAgo(dateString: string): string {
   const now = new Date();
   const date = new Date(dateString);

@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiRequestError } from "@/lib/api";
-import type { ScrapeJob, ScrapeJobStatus } from "@/lib/types";
+import { formatDateTime } from "@/lib/utils";
+import type { ScrapeJob } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Pagination } from "@/components/ui/pagination";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBanner } from "@/components/ui/error-banner";
+import { ITEMS_PER_PAGE } from "@/lib/constants";
 import Link from "next/link";
-
-const STATUS_COLORS: Record<ScrapeJobStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  running: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-};
 
 export default function ScrapeJobsPage() {
   const [jobs, setJobs] = useState<ScrapeJob[]>([]);
@@ -25,7 +25,7 @@ export default function ScrapeJobsPage() {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const params: Record<string, string | number> = { page, limit: 20 };
+      const params: Record<string, string | number> = { page, limit: ITEMS_PER_PAGE };
       if (statusFilter) params.status = statusFilter;
       const res = await api.getScrapeJobs(params);
       setJobs(res.items);
@@ -41,17 +41,9 @@ export default function ScrapeJobsPage() {
     fetchJobs();
   }, [page, statusFilter]);
 
-  const formatDate = (date: string | null) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleString();
-  };
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Scrape Jobs</h1>
-        <p className="text-muted-foreground">View history of scraping jobs</p>
-      </div>
+      <PageHeader title="Scrape Jobs" description="View history of scraping jobs" />
 
       {/* Filters */}
       <div className="flex items-center gap-2">
@@ -61,30 +53,19 @@ export default function ScrapeJobsPage() {
             key={status}
             variant={statusFilter === status ? "default" : "outline"}
             size="sm"
-            onClick={() => {
-              setStatusFilter(status);
-              setPage(1);
-            }}
+            onClick={() => { setStatusFilter(status); setPage(1); }}
           >
             {status || "All"}
           </Button>
         ))}
       </div>
 
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="p-4 text-destructive">{error}</CardContent>
-        </Card>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
       ) : jobs.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            No scrape jobs found. Trigger a job from the Scrape Sources page.
-          </CardContent>
-        </Card>
+        <EmptyState message="No scrape jobs found. Trigger a job from the Scrape Sources page." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -103,13 +84,7 @@ export default function ScrapeJobsPage() {
             <tbody>
               {jobs.map((job) => (
                 <tr key={job.id} className="border-b hover:bg-muted/50">
-                  <td className="py-3">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[job.status]}`}
-                    >
-                      {job.status}
-                    </span>
-                  </td>
+                  <td className="py-3"><StatusBadge status={job.status} /></td>
                   <td className="py-3">
                     <Link
                       href={`/admin/scrape-jobs/${job.id}`}
@@ -118,15 +93,9 @@ export default function ScrapeJobsPage() {
                       {job.source_id.slice(0, 8)}...
                     </Link>
                   </td>
-                  <td className="py-3 text-muted-foreground">
-                    {formatDate(job.created_at)}
-                  </td>
-                  <td className="py-3 text-muted-foreground">
-                    {formatDate(job.started_at)}
-                  </td>
-                  <td className="py-3 text-muted-foreground">
-                    {formatDate(job.completed_at)}
-                  </td>
+                  <td className="py-3 text-muted-foreground">{formatDateTime(job.created_at)}</td>
+                  <td className="py-3 text-muted-foreground">{formatDateTime(job.started_at)}</td>
+                  <td className="py-3 text-muted-foreground">{formatDateTime(job.completed_at)}</td>
                   <td className="py-3 text-right">{job.items_found}</td>
                   <td className="py-3 text-right">{job.items_ingested}</td>
                   <td className="py-3 text-destructive max-w-[200px] truncate">
@@ -139,30 +108,7 @@ export default function ScrapeJobsPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {total > 20 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {Math.ceil(total / 20)}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page * 20 >= total}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      <Pagination page={page} total={total} limit={ITEMS_PER_PAGE} onPageChange={setPage} />
     </div>
   );
 }

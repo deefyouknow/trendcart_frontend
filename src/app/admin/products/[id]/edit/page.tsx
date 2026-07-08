@@ -190,7 +190,7 @@ export default function EditProductPage({
                     className="rounded-lg border p-4 space-y-3"
                   >
                     {/* ML header */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
                         <Badge
                           className={platformConfig.bgClass + " " + platformConfig.textClass}
@@ -199,7 +199,7 @@ export default function EditProductPage({
                         </Badge>
                         <span className="font-medium">{ml.store_name}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                         <Button
                           variant="outline"
                           size="sm"
@@ -228,12 +228,12 @@ export default function EditProductPage({
                     </div>
 
                     {/* ML details */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground min-w-0">
                       <a
                         href={ml.affiliate_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="underline hover:text-foreground truncate max-w-xs"
+                        className="underline hover:text-foreground truncate max-w-[200px] sm:max-w-xs"
                       >
                         {ml.affiliate_url}
                       </a>
@@ -270,10 +270,10 @@ export default function EditProductPage({
                           {ml.variants.map((v) => (
                             <div
                               key={v.id}
-                              className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
+                              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2 text-sm min-w-0"
                             >
-                              <div className="flex items-center gap-3">
-                                <span>{v.variant_name}</span>
+                              <div className="flex flex-wrap items-center gap-3 min-w-0">
+                                <span className="truncate max-w-[180px] sm:max-w-xs">{v.variant_name}</span>
                                 <span className="font-medium">
                                   {formatPrice(v.price, v.currency)}
                                 </span>
