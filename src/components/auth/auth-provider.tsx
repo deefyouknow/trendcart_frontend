@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import type { Creator } from "@/lib/types";
 
@@ -19,6 +19,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const USER_KEY = "trendcart-user";
 
+/** Access token TTL in ms — refresh 1 min before expiry (14 min). */
+const REFRESH_INTERVAL_MS = 14 * 60 * 1000;
+
 function getStoredUser(): Creator | null {
   if (typeof window === "undefined") return null;
   try {
@@ -35,7 +38,7 @@ function persistUser(user: Creator | null) {
   else localStorage.removeItem(USER_KEY);
 }
 
-/* Server-managed via httpOnly cookie; this endpoint tells us if a session exists. */
+/** Check if a session exists by calling the backend session endpoint. */
 async function checkSession(): Promise<boolean> {
   try {
     const res = await fetch("/api/auth/session", { credentials: "include" });
@@ -48,6 +51,35 @@ async function checkSession(): Promise<boolean> {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Creator | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Auto-refresh: silently refresh access token before it expires ──
+  const startRefreshTimer = useCallback(() => {
+    // Clear any existing timer
+    if (refreshTimer.current) clearInterval(refreshTimer.current);
+    refreshTimer.current = setInterval(async () => {
+      try {
+        await api.refresh();
+      } catch {
+        // Refresh failed — session expired, clear user
+        setUser(null);
+        persistUser(null);
+        if (refreshTimer.current) clearInterval(refreshTimer.current);
+      }
+    }, REFRESH_INTERVAL_MS);
+  }, []);
+
+  const stopRefreshTimer = useCallback(() => {
+    if (refreshTimer.current) {
+      clearInterval(refreshTimer.current);
+      refreshTimer.current = null;
+    }
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => stopRefreshTimer();
+  }, [stopRefreshTimer]);
 
   // Hydrate: stored user + verify session via cookie
   useEffect(() => {
@@ -58,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
       if (hasSession && storedUser) {
         setUser(storedUser);
+        startRefreshTimer();
       } else if (!hasSession) {
         persistUser(null);
         setUser(null);
@@ -67,13 +100,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [startRefreshTimer]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.login({ email, password });
     setUser(res.creator);
     persistUser(res.creator);
-  }, []);
+    startRefreshTimer();
+  }, [startRefreshTimer]);
 
   const register = useCallback(
     async (email: string, password: string, displayName: string) => {
@@ -84,22 +118,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    try {
+      await api.logout();
+    } catch {
+      // Ignore logout errors — clear local state regardless
+    }
+    stopRefreshTimer();
     setUser(null);
     persistUser(null);
-  }, []);
+  }, [stopRefreshTimer]);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
     const res = await api.loginWithGoogle(idToken);
     setUser(res.creator);
     persistUser(res.creator);
-  }, []);
+    startRefreshTimer();
+  }, [startRefreshTimer]);
 
   const loginWithGitHub = useCallback(async (code: string) => {
     const res = await api.loginWithGitHub(code);
     setUser(res.creator);
     persistUser(res.creator);
-  }, []);
+    startRefreshTimer();
+  }, [startRefreshTimer]);
 
   return (
     <AuthContext.Provider

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -20,10 +20,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   // Redirect if already logged in
-  if (isAuthenticated) {
-    router.push("/admin");
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace("/admin");
+    }
+  }, [isAuthenticated, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

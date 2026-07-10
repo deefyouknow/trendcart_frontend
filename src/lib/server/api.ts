@@ -18,7 +18,16 @@ async function fetchFromBackend<T>(path: string, options: RequestInit = {}): Pro
   });
 
   if (!res.ok) {
-    throw new Error(`Backend Error: ${res.status}`);
+    let errorMessage = `Backend Error: ${res.status}`;
+    try {
+      const errorBody = await res.json();
+      if (errorBody.error) {
+        errorMessage = errorBody.error;
+      }
+    } catch {
+      // Response body is not JSON, use default message
+    }
+    throw new Error(errorMessage);
   }
 
   return res.json();

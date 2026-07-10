@@ -11,14 +11,22 @@ import type {
 } from "./types";
 
 /* ============================================
-   API Client — TrendCart Frontend (proxy through Next.js Route Handlers)
-   All requests go to relative /api/... so no CORS, no leaked backend URL
+   API Client — TrendCart Frontend (direct to Rust backend)
+   Cookies are sent automatically via credentials: 'include'
    ============================================ */
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:59123";
+
 class ApiClient {
+  /** Prevents infinite refresh loops — true while a refresh is in flight. */
+  private _refreshing = false;
+  /** Queue of callers waiting for the in-flight refresh to resolve. */
+  private _refreshWaiters: Array<() => void> = [];
+
   private async request<T>(
     path: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    _isRetry = false,
   ): Promise<T> {
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
@@ -31,11 +39,21 @@ class ApiClient {
       headers["Content-Type"] = "application/json";
     }
 
-    const res = await fetch(path, {
+    const url = `${BACKEND_URL}${path}`;
+    const res = await fetch(url, {
       ...options,
       headers,
       credentials: "include",
     });
+
+    // On 401 — try a silent refresh (unless this is already a retry or the request IS the refresh)
+    if (res.status === 401 && !_isRetry && path !== "/api/auth/refresh") {
+      const refreshed = await this._tryRefresh();
+      if (refreshed) {
+        // Retry the original request once
+        return this.request<T>(path, options, true);
+      }
+    }
 
     if (!res.ok) {
       const error: ApiError = await res.json().catch(() => ({
@@ -50,6 +68,37 @@ class ApiClient {
     }
 
     return res.json();
+  }
+
+  /**
+   * Attempt a token refresh. Coalesces concurrent callers so only one
+   * request hits the backend. Returns true if a new access token was issued.
+   */
+  private async _tryRefresh(): Promise<boolean> {
+    // If another refresh is already in flight, wait for it
+    if (this._refreshing) {
+      return new Promise<boolean>((resolve) => {
+        this._refreshWaiters.push(() => resolve(true));
+      });
+    }
+
+    this._refreshing = true;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    } finally {
+      this._refreshing = false;
+      // Wake all waiters
+      for (const w of this._refreshWaiters) w();
+      this._refreshWaiters = [];
+    }
   }
 
   // --- Auth ---
@@ -68,6 +117,19 @@ class ApiClient {
     return this.request<LoginResponse>("/api/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  async refresh() {
+    return this.request<LoginResponse>("/api/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  }
+
+  async logout() {
+    await this.request<{ message: string }>("/api/auth/logout", {
+      method: "POST",
     });
   }
 
@@ -244,7 +306,7 @@ class ApiClient {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch("/api/admin/upload", {
+    const res = await fetch(`${BACKEND_URL}/api/uploads`, {
       method: "POST",
       body: formData,
       credentials: "include",

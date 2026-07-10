@@ -12,7 +12,7 @@ export interface Creator {
 }
 
 export interface LoginResponse {
-  token: string;
+  token?: string;
   creator: Creator;
 }
 
