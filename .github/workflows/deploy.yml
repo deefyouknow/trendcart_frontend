@@ -26,32 +26,15 @@ jobs:
             mkdir -p "$PROJECT_DIR"
             mkdir -p "$FRONTEND_DIR"
 
-            # ── Sync docker-compose.yml ที่ root project ───────────────────
+            # ── Sync docker-compose.yml (frontend only) ───────────────────
             cat > "$PROJECT_DIR/docker-compose.yml" << 'COMPOSE_EOF'
             services:
-              trendcart_api:
-                build:
-                  context: ./backend
-                  dockerfile: Dockerfile
-                container_name: trendcart_api
-                restart: always
-                env_file:
-                  - ./backend/.env
-                environment:
-                  RUST_LOG: info
-                ports:
-                  - "59123:59123"
-                networks:
-                  - trendcart_net
-
               trendcart_frontend:
                 build:
                   context: ./frontend
                   dockerfile: Dockerfile
                 container_name: trendcart_frontend
                 restart: always
-                depends_on:
-                  - trendcart_api
                 env_file:
                   - ./frontend/.env
                 environment:
